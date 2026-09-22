@@ -1,0 +1,58 @@
+name: Build Godot Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GODOT_VERSION: "4.3"
+  EXPORT_NAME: "DuelDash3D"
+
+jobs:
+  android-debug:
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare Godot export templates
+        shell: bash
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates
+          mkdir -p ~/.config
+          if [ -d /root/.config/godot ]; then
+            mv /root/.config/godot ~/.config/godot || true
+          fi
+          if [ -d "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ]; then
+            mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ~/.local/share/godot/export_templates/ || true
+          fi
+
+      - name: Install Android API 35
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Import project
+        run: godot --headless --verbose --editor --quit --path .
+
+      - name: Export debug APK
+        shell: bash
+        run: |
+          mkdir -p build
+          godot --headless --verbose --path . --export-debug "Android Debug" "$(pwd)/build/${EXPORT_NAME}-debug.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DuelDash3D-debug-apk
+          path: build/DuelDash3D-debug.apk
+          if-no-files-found: error
