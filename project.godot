@@ -1,0 +1,26 @@
+; Engine configuration file.
+; Generated for Duel Dash 3D prototype.
+config_version=5
+
+[application]
+config/name="Duel Dash 3D"
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+boot_splash/bg_color=Color(0.035, 0.047, 0.078, 1)
+
+[autoload]
+NetworkManager="*res://scripts/network_manager.gd"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/handheld/orientation=1
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+anti_aliasing/quality/msaa_3d=1
