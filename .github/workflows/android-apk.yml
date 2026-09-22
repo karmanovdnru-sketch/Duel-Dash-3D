@@ -26,26 +26,59 @@ jobs:
       - name: Prepare Godot export templates
         shell: bash
         run: |
-          mkdir -p ~/.local/share/godot/export_templates
-          mkdir -p ~/.config
-          if [ -d /root/.config/godot ]; then
-            mv /root/.config/godot ~/.config/godot || true
-          fi
+          mkdir -p "$HOME/.local/share/godot/export_templates"
           if [ -d "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ]; then
-            mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ~/.local/share/godot/export_templates/ || true
+            cp -a "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" "$HOME/.local/share/godot/export_templates/"
           fi
 
-      - name: Install Android API 35
+      - name: Install Android API 34
         shell: bash
         run: |
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Configure Godot Android export
+        shell: bash
+        run: |
+          JAVA_SDK="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
+          ANDROID_SDK="${ANDROID_HOME:-/usr/lib/android-sdk}"
+
+          rm -f /tmp/debug.keystore
+          keytool -genkeypair \
+            -keystore /tmp/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.3.tres" <<SETTINGS
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/java_sdk_path = "$JAVA_SDK"
+          export/android/android_sdk_path = "$ANDROID_SDK"
+          export/android/debug_keystore = "/tmp/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          SETTINGS
+
+          echo "JAVA SDK: $JAVA_SDK"
+          echo "ANDROID SDK: $ANDROID_SDK"
+          test -f /tmp/debug.keystore
 
       - name: Import project
         run: godot --headless --verbose --editor --quit --path .
 
       - name: Export debug APK
         shell: bash
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: /tmp/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
         run: |
           mkdir -p build
           godot --headless --verbose --path . --export-debug "Android Debug" "$(pwd)/build/${EXPORT_NAME}-debug.apk"
