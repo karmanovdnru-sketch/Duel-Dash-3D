@@ -39,7 +39,7 @@ jobs:
         shell: bash
         run: |
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
       - name: Import project
         run: godot --headless --verbose --editor --quit --path .
